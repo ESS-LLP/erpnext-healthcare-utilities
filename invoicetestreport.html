@@ -1,0 +1,216 @@
+<div >
+<div id="header-html">
+    {% if letter_head and not no_letterhead -%}
+    <div class="letter-head">
+        {{ letter_head }}
+    </div>
+    {% endif %}
+</div>
+
+  <div class="row section-break">
+    <div class="col-xs-6 column-break">
+      {% if doc.patient %}
+      <div class="row">
+        <div class="col-xs-4 text-left">
+          <label>Patient</label>
+        </div>
+        <div class="col-xs-7  value">
+          <strong>: </strong>{{ doc.patient_name }}
+        </div>
+      </div>
+	{% if doc.patient_age %}
+      <div class="row">
+        <div class="col-xs-4 text-left">
+          <label>Age</label>
+        </div>
+        <div class="col-xs-7  value">
+          <strong>: </strong> {{ doc.patient_age }}
+        </div>
+      </div>
+	  {%- endif %}
+	{% if doc.patient_gender %}
+      <div class="row">
+        <div class="col-xs-4 text-left">
+          <label>Gender</label>
+        </div>
+        <div class="col-xs-7  value">
+          <strong>: </strong> {{ doc.patient_gender }}
+        </div>
+      </div>
+	  {%- endif %}
+	  {%- endif %}
+
+    </div>
+
+    <div class="col-xs-6 column-break">
+      <div class="row">
+        <div class="col-xs-4 text-left">
+          <label>Order No.</label>
+        </div>
+        <div class="col-xs-7  value">
+          <strong>: </strong>{{doc.name}}
+        </div>
+      </div>
+      <div class="row">
+	<div class="col-xs-4 text-left">
+          <label>Order Date</label>
+        </div>
+        <div class="col-xs-7  text-left value">
+          <strong>: </strong>{{ doc.posting_date }}
+        </div>
+        {% if doc.ref_practitioner %}
+        <div class="col-xs-4 text-left">
+          <label>Doctor</label>
+        </div>
+        <div class="col-xs-7  text-left value">
+          <strong>: </strong>{{doc.ref_practitioner}}
+        </div>
+        {%- endif -%}
+      </div>
+    </div>
+
+  </div>
+  {% set dept = {'department': ''} %}
+  {% set normal_repeat = {'normal_repeat': 0} %}
+  {% set special_repeat = {'special_repeat': 0} %}
+
+  {%- for row in doc.items -%}
+  {%- if row.reference_dt == "Lab Test" or row.reference_dt == "Lab Prescription"-%}
+  {%- if row.reference_dt == "Lab Test" %}
+    {% set test = frappe.get_doc('Lab Test', row.reference_dn ) %}
+  {%- elif row.reference_dt == "Lab Prescription"-%}
+    {% set test = frappe.get_doc('Lab Test', {"prescription": row.reference_dn} ) %}
+  {% endif %}
+    {%- if frappe.db.get_value("Healthcare Settings", "None", "require_test_result_approval") == '1' and test.approval_status!="Approved" -%}
+    <div></div>
+    {% elif (test.docstatus==1) %}
+
+      <div align="center">
+        {%- if test.department != dept.department -%}
+          <hr><h4 class="text-uppercase"><b><u>Department of {{test.department}}</u></b></h4>
+        {%- endif -%}
+      </div>
+
+      {% if dept.update({'department': test.department}) %} {% endif %}
+
+      {%- if test.normal_test_items -%}
+        {% if special_repeat.update({'special_repeat': 0}) %} {% endif %}
+        <div>
+          <table class="table">
+            <tbody>
+
+              {%- if normal_repeat.normal_repeat == 0 -%}
+                <tr>
+                  <th style="border:none;">Name of Test</th>
+                  <th class="text-left" style="border:none;">Result</th>
+                  <th class="text-right" style="border:none;">Normal Range</th>
+                </tr>
+                {% if normal_repeat.update({'normal_repeat': 1}) %} {% endif %}
+              {%- endif -%}
+
+              {%- if test.normal_test_items|length > 1 %}
+                <tr><td style="border:none; width: 40%;"> <b>{{ test.lab_test_name }}</b> </td><td style="border:none;"><td style="border:none;"></td></td></tr>
+              {%- endif -%}
+
+              {%- for row in test.normal_test_items -%}
+                <tr>
+                  <td style="width: 40%;border:none;">
+                    {%- if test.normal_test_items|length > 1 %}&emsp;&emsp;{%- endif -%}
+                    {%- if row.lab_test_name -%}<b>{{ row.lab_test_name }}</b>
+                    {%- else -%}&emsp;&emsp;&emsp;{%- endif -%}
+                    {%- if row.lab_test_event -%} &emsp;&emsp;{{ row.lab_test_event }}{%- endif -%}
+                  </td>
+                  <td style="width: 20%;text-align: left;border:none;">
+                    {%- if row.result_value -%}{{ row.result_value }}{%- endif -%}&emsp;
+                    {%- if row.lab_test_uom -%}{{ row.lab_test_uom }}{%- endif -%}
+                  </td>
+
+                  <td style="width: 30%;text-align: right;border:none;">
+                    <div style="border: 0px;">
+                      {%- if row.normal_range -%}{{ row.normal_range }}{%- endif -%}
+                    </div>
+                  </td>
+                </tr>
+              {%- endfor -%}
+            </tbody>
+          </table>
+        </div>
+      {%- endif -%}
+
+      {%- if test.special_test_items -%}
+        {% if normal_repeat.update({'normal_repeat': 0}) %} {% endif %}
+        <div>
+          <table class="table">
+            <tbody>
+
+              {% if special_repeat.special_repeat == 0 %}
+              <tr>
+                <th style="border:none;">Name of Test</th>
+                <th class="text-left" style="border:none;">Result</th>
+              </tr>
+              {% if special_repeat.update({'special_repeat': 1}) %} {% endif %}
+              {%- endif -%}
+
+              <tr>
+                <td style="width: 30%;border:none;"> <b>{{ test.lab_test_name }}</b> </td>
+                <td style="border:none;"></td>
+              </tr>
+
+              {%- for row in test.special_test_items -%}
+              <tr>
+                <td style="width: 30%;border:none;"> &emsp;&emsp;{{ row.lab_test_particulars }} </td>
+                <td style="width: 70%;text-align: left;border:none;">
+                  {%- if row.result_value -%}{{ row.result_value }}{%- endif -%}
+                </td>
+              </tr>
+
+              {%- endfor -%}
+
+
+              {%- if test.sensitivity_test_items -%}
+              <tr>
+                <th>Antibiotic</th>
+                <th class="text-left">Sensitivity</th>
+              </tr>
+              {%- endif -%}
+              {%- for row in test.sensitivity_test_items -%}
+              <tr>
+                <td style="width: 30%;border:none;"> {{ row.antibiotic }} </td>
+                <td style="width: 70%;text-align: left;border:none;">{{ row.antibiotic_sensitivity }}</td>
+              </tr>
+              {%- endfor -%}
+
+            </tbody>
+          </table>
+        </div>
+      {%- endif -%}
+
+      <div align="right">
+        {%- if (frappe.db.get_value("Healthcare Settings", "None", "employee_name_and_designation_in_print") == '1') -%}
+          <h6 class="text-uppercase"><b>{{test.employee_name or ""}}</b></h6>
+          <h6 class="text-uppercase"><b>{{test.employee_designation or ""}}</b></h6>
+        {%- endif -%}
+      </div>
+
+    {%- else -%}
+      <div></div>
+    {%- endif -%}
+  {%- endif -%}
+
+  {%- endfor -%}
+
+  <div align="right">
+    {%- if (frappe.db.get_value("Healthcare Settings", "None", "employee_name_and_designation_in_print") == '0') -%}
+      <h6 ><b>{{frappe.db.get_value("Healthcare Settings", "None", "custom_signature_in_print") }}</b></h6>
+    {%- endif -%}
+  </div>
+<div id="footer-html" class="visible-pdf">
+    {% if not no_letterhead and footer %}
+    <div class="letter-head-footer">
+        {{ footer }}
+    </div>
+    {% endif %}
+    <p class="text-center small page-number visible-pdf">
+        {{ _("Page {0} of {1}").format('<span class="page"></span>', '<span class="topage"></span>') }}
+    </p>
+</div>
