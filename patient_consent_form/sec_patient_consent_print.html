@@ -1,0 +1,11 @@
+<div >
+  {% if letter_head and not no_letterhead -%}
+  <div class="letter-head">{{ letter_head }}</div>
+  <hr>
+  {%- endif %}
+
+  <div align="justify">
+    {{ doc.consent }}
+  </div>
+
+</div>
