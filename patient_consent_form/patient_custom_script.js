@@ -28,8 +28,9 @@ var print_consent = function(frm) {
 							return;
 						get_consent(d.get_value('consent_template'), frm.doc, function(r) {
 							if(!r.exc) {
+								// sec_concent Custom field to set consent details in Patient
 								frm.set_value("sec_consent", r.message)
-								frm.meta.default_print_format = "Patient Consent Form"
+								frm.meta.default_print_format = "Patient Consent Form" // Name of your Print Format
 								frm.print_doc()
 							}
 						});
@@ -44,7 +45,7 @@ var print_consent = function(frm) {
 var get_consent= function(consent_template, doc, callback) {
 	if(consent_template) {
 		return frappe.call({
-			method: 'smartecare.smarte_care.doctype.patient_consent_template.patient_consent_template.render_consent_template',
+			method: '<your_app>.<your_module>.doctype.patient_consent_template.patient_consent_template.render_consent_template',
 			args: {
 				template_name: consent_template,
 				doc: doc
